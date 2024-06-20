@@ -83,7 +83,7 @@ app.get('/api/users', async (req, res) => {
 });
 
 //buscador de pibes
-app.get('/searchuser/:user', async (req, res) => {
+app.get('/api/searchuser/:user', async (req, res) => {
   try {
     const userSeek  = req.params.user;
     //console.log('user:' +userSeek)
@@ -121,7 +121,7 @@ app.get('/searchuser/:user', async (req, res) => {
 
 
 // Eliminar usuario por nombre de usuario
-app.delete('/deluser/:user', async (req, res) => {
+app.delete('/api/deluser/:user', async (req, res) => {
   const username = req.params.user;
 
   try {
@@ -139,7 +139,7 @@ app.delete('/deluser/:user', async (req, res) => {
 });
 
 // Handle POST request
-app.post('/insertUser', async (req, res) => {
+app.post('/api/insertUser', async (req, res) => {
   const newData = req.body;
   const client = new MongoClient(uri);
   //primero se verifica si el cliente ya existe
@@ -171,7 +171,7 @@ app.post('/insertUser', async (req, res) => {
 });
 
 // Route to update a user
-app.put('/updateUser/:olduser', async (req, res) => {
+app.put('/api/updateUser/:olduser', async (req, res) => {
 
   const oldusername = req.params.olduser;
   const newUser = req.body.user;
@@ -214,7 +214,7 @@ const Pedidos = mongoose.model('pedidos', SchemaPedidos);
 //SchemaPedidos es el nuevo modelo
 
 // Handle POST request
-app.post('/insertPedido', async (req, res) => {
+app.post('/api/insertPedido', async (req, res) => {
   const newData = req.body;
   const client = new MongoClient(uri);
   //primero se verifica si el cliente ya existe
@@ -239,7 +239,7 @@ app.post('/insertPedido', async (req, res) => {
 
 
 //obtener datos de pedidos
-app.get('/pedidos', async (req, res) => {
+app.get('/api/pedidos', async (req, res) => {
   try {
     const pedidos = await Pedidos.find().select('-__v'); // Excluding the __v field from the response
 
@@ -258,7 +258,7 @@ app.get('/pedidos', async (req, res) => {
 
 
 // Eliminar pedido utilizando su ID
-app.delete('/delpedido/:id_pedido', async (req, res) => {
+app.delete('/api/delpedido/:id_pedido', async (req, res) => {
   const id_pedido = req.params.id_pedido;
   //console.log(id_pedido);
   try {
@@ -277,7 +277,7 @@ app.delete('/delpedido/:id_pedido', async (req, res) => {
 
 
 // Actuaizar un pedido
-app.put('/updatePedidoCompletado/:id_pedido', async (req, res) => {
+app.put('/api/updatePedidoCompletado/:id_pedido', async (req, res) => {
 
   const id_pedido = req.params.id_pedido;
 
@@ -314,9 +314,9 @@ var generadorToken = function() {
 };
 
 // Serve the index.html file
-app.get('/', (req, res) => {
+/*app.get('/', (req, res) => {
   res.sendFile(__dirname + '/index.html');
-});
+});*/
 
 app.listen(port, () => {
   console.log(`Server is running on port ${port}`);
