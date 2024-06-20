@@ -33,7 +33,7 @@ const UserSchema = new mongoose.Schema({
 const User = mongoose.model('users', UserSchema);
 
 
-app.post('/login', async (req, res) => {
+app.post('/api/login', async (req, res) => {
   const { user, passw } = req.body;
   
   try {
