@@ -33,7 +33,7 @@ const UserSchema = new mongoose.Schema({
 const User = mongoose.model('users', UserSchema);
 
 
-app.post('/api/login', async (req, res) => {
+app.post('/login', async (req, res) => {
   const { user, passw } = req.body;
   
   try {
@@ -65,7 +65,7 @@ app.post('/api/login', async (req, res) => {
 });
 
 // Obtener todos los usuarios
-app.get('/users', async (req, res) => {
+app.get('/api/users', async (req, res) => {
   try {
     const users = await User.find({}, { _id: 0, __v: 0 }); // Excluir el _id y __v de la respuesta
 
