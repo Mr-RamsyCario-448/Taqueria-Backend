@@ -7,6 +7,7 @@ const bodyParser = require('body-parser');
 const bcrypt = require('bcryptjs');
 const cors = require('cors');
 const MongoClient = require('mongodb').MongoClient;
+require('dotenv').config()
 
 const app = express();
 const port = 3001;
@@ -14,7 +15,7 @@ const port = 3001;
 app.use(cors());
 app.use(bodyParser.json());
 
-const uri = 'mongodb+srv://al20020726:jSBbGIiES0zXb9vC@clusterisic8s.hdwmx2j.mongodb.net/userdb?retryWrites=true&w=majority&appName=ClusterISIC8S';
+const uri = process.env.MONGODB_URI_TAQUERIA;
 
 mongoose.connect(uri).
 then(() => {
@@ -37,25 +38,20 @@ app.post('/api/login', async (req, res) => {
   const { user, passw } = req.body;
   
   try {
-    // Retrieve user from database
+    // Obtiene la lista de usuarios
     const userf = await User.findOne({ user });
 
-    // Check if user exists
+    // Revisa si el usuario existe
     if (!userf) {
       return res.status(404).json({ message: 'Usuario no encontrado' });
     }
 
-    // Compare hashed password with the provided password
+    // Compara las contraseñas encryptadas
     const isPasswordValid = await bcrypt.compare(passw, userf.passw);
-
-    /*console.log('normal:'+passw)
-    console.log('hash:'+userf.passw)*/
 
     if (!isPasswordValid) {
       return res.status(401).json({ message: 'Credenciales inválidas' });
     }
-    //console.log(userf.role);
-    
 
     return res.status(200).json({ message: 'Login exitoso',rol: userf.role, username: userf.user, token: generadorToken()});
   } catch (error) {
@@ -64,7 +60,7 @@ app.post('/api/login', async (req, res) => {
   }
 });
 
-// Obtener todos los usuarios
+// Obtener todos los usuarios para Dashboards
 app.get('/api/users', async (req, res) => {
   try {
     const users = await User.find({}, { _id: 0, __v: 0 }); // Excluir el _id y __v de la respuesta
@@ -82,43 +78,37 @@ app.get('/api/users', async (req, res) => {
   }
 });
 
-//buscador de pibes
+//Funcion para buscar un usuario
 app.get('/api/searchuser/:user', async (req, res) => {
   try {
     const userSeek  = req.params.user;
-    //console.log('user:' +userSeek)
-    // Verificar si se proporcionó un nombre en la consulta
+    //Verificar si se proporcionó un nombre en la consulta
     if (!userSeek) {
       return res.status(400).json({ message: 'Debe proporcionar un nombre para buscar usuarios' });
     }
 
-      // Create a regular expression to match usernames containing 'admin'
+      //Utilizamos una expresion regular para buscar todo lo que coincida con la busqueda proporcionada
       const buscaUsuario = new RegExp(userSeek, 'i'); // 'i' makes it case-insensitive
 
     //Se utiliza la expresion regular para buscar cualquier dato
     //que coincida con el nombre de usuario proporcionado
-    // Buscar usuarios que coincidan con el nombre
+    
+    //Buscar usuarios que coincidan con el nombre
     const users = await User.find({ 'user' :  { $regex: buscaUsuario } }, { _id: 0, __v: 0 });
 
-    //console.log(users);
-
-    // Verificar si se encontraron usuarios
+    // Regresar mensaje si no hubo coincidencias
     if (users.length === 0) {
       console.log(users);
       return res.status(404).json({message:'No se encontraron usuarios con el nombre proporcionado'});
     }
 
-    // Devolver la lista de usuarios que coinciden con el nombre
+    // Si se encontró coincidencias, devolver la lista de usuarios que coinciden con el nombre
     return res.status(200).json(users);
   } catch (error) {
     console.error(error);
     return res.status(500).json({ message: 'Error interno del servidor' });
   }
 });
-
-
-
-
 
 // Eliminar usuario por nombre de usuario
 app.delete('/api/deluser/:user', async (req, res) => {
@@ -138,12 +128,11 @@ app.delete('/api/deluser/:user', async (req, res) => {
   }
 });
 
-// Handle POST request
+// Funcion para insertar nuevos usuarios
 app.post('/api/insertUser', async (req, res) => {
   const newData = req.body;
   const client = new MongoClient(uri);
   //primero se verifica si el cliente ya existe
-  // Verificar si el usuario ya existe
   const { user } = req.body;
 
   // Verificar si el usuario ya existe
@@ -153,12 +142,12 @@ app.post('/api/insertUser', async (req, res) => {
   }
   
   try {
-      await client.connect(); // Connect to MongoDB cluster
+      await client.connect(); // Conexion al Cluster de Mongo DB
 
-      const database = client.db(); // Get the database
-      const collection = database.collection('users'); // Get the collection
+      const database = client.db(); // Obtener la base de datos
+      const collection = database.collection('users'); // Obtener la coleccion
 
-      // Insert data
+      // Insertar datos
       const result = await collection.insertOne(newData);
       res.send("Data inserted successfully");
 
@@ -166,24 +155,23 @@ app.post('/api/insertUser', async (req, res) => {
       console.error("Error:", err.message);
       res.status(500).send("Error inserting data");
   } finally {
-      client.close(); // Close the connection
+      client.close(); // Terminar la conexion
   }
 });
 
-// Route to update a user
+// Funcion para actualizar un usuario existente
 app.put('/api/updateUser/:olduser', async (req, res) => {
 
   const oldusername = req.params.olduser;
   const newUser = req.body.user;
   const newPassw = req.body.passw; 
   const choosenRole = req.body.role;
-  //const userNewData = req.body;
 
   try {
       const filter = { user: oldusername };
       const   updateDoc = { 'user':newUser,'passw':newPassw, 'role':choosenRole };
       
-      // Update the document in the collection
+      // Actualizar el documento en la coleccion
       const result = await User.updateOne(filter, updateDoc);
 
       if (result.modifiedCount === 1) {
@@ -213,19 +201,17 @@ const Pedidos = mongoose.model('pedidos', SchemaPedidos);
 
 //SchemaPedidos es el nuevo modelo
 
-// Handle POST request
+// Esta funcion inserta un nuevo pedido
 app.post('/api/insertPedido', async (req, res) => {
   const newData = req.body;
   const client = new MongoClient(uri);
-  //primero se verifica si el cliente ya existe
-  // Verificar si el usuario ya existe
   try {
-      await client.connect(); // Connect to MongoDB cluster
+      await client.connect(); // Conexion al cluster
 
-      const database = client.db(); // Get the database
-      const collection = database.collection('pedidos'); // Get the collection
+      const database = client.db(); // Obtener la base de datos
+      const collection = database.collection('pedidos'); // Obtener la coleccion
 
-      // Insert data
+      // Insertar pedido
       const result = await collection.insertOne(newData);
       res.send("Data inserted successfully");
 
@@ -236,7 +222,6 @@ app.post('/api/insertPedido', async (req, res) => {
       client.close(); // Close the connection
   }
 });
-
 
 //obtener datos de pedidos
 app.get('/api/pedidos', async (req, res) => {
@@ -256,14 +241,11 @@ app.get('/api/pedidos', async (req, res) => {
   }
 });
 
-
 // Eliminar pedido utilizando su ID
 app.delete('/api/delpedido/:id_pedido', async (req, res) => {
   const id_pedido = req.params.id_pedido;
-  //console.log(id_pedido);
   try {
     const deletedUser = await Pedidos.findOneAndDelete({ _id: id_pedido});
-    //console.log('usuario es:'+username)
     if (deletedUser) {
       return res.status(200).json({ message: 'Pedido eliminado exitosamente' });
     } else {
@@ -275,8 +257,7 @@ app.delete('/api/delpedido/:id_pedido', async (req, res) => {
   }
 });
 
-
-// Actuaizar un pedido
+// Actuaizar un pedido (NO TERMINADO)
 app.put('/api/updatePedidoCompletado/:id_pedido', async (req, res) => {
 
   const id_pedido = req.params.id_pedido;
@@ -297,26 +278,18 @@ app.put('/api/updatePedidoCompletado/:id_pedido', async (req, res) => {
       console.error('Error updating user:', error);
       res.status(500).json({ message: 'Internal server error'});
   }
-});
+});//FIN DE ACTUALIZAR PEDIDO
 
 }
 
-
-
-//function to generate a Token
-
+//funcion para generar un token
 var generadorLetras = function() {
   return Math.random().toString(36).substr(2); // remove `0.`
 };
 
 var generadorToken = function() {
-  return generadorLetras() + generadorLetras(); // to make it longer
+  return generadorLetras() + generadorLetras(); // Para hacerlo mas largo
 };
-
-// Serve the index.html file
-/*app.get('/', (req, res) => {
-  res.sendFile(__dirname + '/index.html');
-});*/
 
 app.listen(port, () => {
   console.log(`Server is running on port ${port}`);
